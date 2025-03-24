@@ -1,0 +1,179 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  country       String
+  currency      String // Preferred currency
+  acceptsCrypto Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  wallets        CryptoWallet[]
+  transactions   Transaction[]   @relation("SenderTransactions")
+  vendors        Vendor[]
+  paymentMethods PaymentMethod[]
+  provider       String? // Stripe, Wise, PayPal, etc.
+}
+
+model Vendor {
+  id            String       @id @default(uuid())
+  name          String
+  email         String       @unique
+  country       String
+  currency      String
+  contactName   String?
+  contactPhone  String?
+  website       String?
+  acceptsCrypto Boolean      @default(false)
+  paymentTerms  String? // Net 30, Due on receipt, etc.
+  notes         String?
+  status        VendorStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  userId           String
+  user             User           @relation(fields: [userId], references: [id])
+  bankAccounts     BankAccount[]
+  wallets          CryptoWallet[]
+  receivedPayments Transaction[]  @relation("RecipientTransactions")
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+model CryptoWallet {
+  id        String   @id @default(uuid())
+  address   String
+  network   String // Ethereum, Solana, etc.
+  type      String // USDC, USDT, etc.
+  isDefault Boolean  @default(false)
+  label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId   String?
+  user     User?   @relation(fields: [userId], references: [id])
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id])
+
+  @@unique([address, network])
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  bankName      String
+  accountNumber String
+  accountName   String
+  swiftCode     String?
+  routingNumber String?
+  iban          String?
+  isDefault     Boolean  @default(true)
+  currency      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+}
+
+model Transaction {
+  id               String            @id @default(uuid())
+  amount           Float
+  currency         String
+  description      String?
+  invoiceNumber    String?
+  status           TransactionStatus @default(PENDING)
+  type             PaymentType
+  exchangeRate     Float?
+  fee              Float?
+  settlementTime   DateTime?
+  aiRecommendation String? // Store AI recommendation
+  createdAt        DateTime          @default(now())
+  completedAt      DateTime?
+
+  senderId        String
+  sender          User            @relation("SenderTransactions", fields: [senderId], references: [id])
+  recipientId     String
+  recipient       Vendor          @relation("RecipientTransactions", fields: [recipientId], references: [id])
+  paymentMethodId String
+  paymentMethod   PaymentMethod   @relation(fields: [paymentMethodId], references: [id])
+  fxOptimization  FXOptimization?
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model PaymentMethod {
+  id        String      @id @default(uuid())
+  type      PaymentType
+  name      String // Display name
+  isDefault Boolean     @default(false)
+  details   Json? // Additional details specific to method type
+  createdAt DateTime    @default(now())
+
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+}
+
+enum PaymentType {
+  USDC
+  ACH
+  SWIFT
+  WIRE
+  SEPA
+}
+
+model FXOptimization {
+  id                String      @id @default(uuid())
+  transactionId     String      @unique
+  optimalMethod     PaymentType
+  predictedRate     Float
+  actualRate        Float?
+  savingsAmount     Float?
+  savingsPercentage Float?
+  reasoning         String? // Why this method was chosen
+  createdAt         DateTime    @default(now())
+  rateDifference    Float? // actualRate - predictedRate
+  transaction       Transaction @relation(fields: [transactionId], references: [id])
+}
+
+model ExchangeRate {
+  id           String   @id @default(uuid())
+  fromCurrency String
+  toCurrency   String
+  rate         Float
+  source       String // Data source
+  timestamp    DateTime @default(now())
+
+  @@unique([fromCurrency, toCurrency, timestamp])
+}
+
+model AIInteraction {
+  id            String   @id @default(uuid())
+  userId        String
+  query         String
+  response      String   @db.Text
+  transactionId String?
+  createdAt     DateTime @default(now())
+}
