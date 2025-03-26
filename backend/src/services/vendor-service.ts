@@ -8,9 +8,6 @@ import {
 import prisma from "../config/db";
 
 export class VendorService {
-  /**
-   * Create a new vendor
-   */
   async createVendor(
     userId: string,
     vendorData: CreateVendorDto

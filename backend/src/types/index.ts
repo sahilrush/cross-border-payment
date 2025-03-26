@@ -1,4 +1,3 @@
-// src/types/index.ts
 import { PaymentType, TransactionStatus, VendorStatus } from "@prisma/client";
 
 // Auth types

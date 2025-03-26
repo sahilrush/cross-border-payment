@@ -1,4 +1,3 @@
-// src/routes/payment.routes.ts
 import { Router } from "express";
 import { authMiddleware } from "../api/middlewares/auth.middleware";
 import { PaymentController } from "../api/controllers/payment.controller";

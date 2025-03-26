@@ -1,4 +1,3 @@
-// src/services/payment.service.ts
 import {
   PrismaClient,
   PaymentType,
