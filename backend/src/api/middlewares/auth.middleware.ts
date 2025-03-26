@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../../config/db";
+
 export interface AuthRequest extends Request {
   user?: any;
   userId?: string;
@@ -16,7 +17,8 @@ export const authMiddleware = async (
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Unauthorized - Token required" });
+      res.status(401).json({ error: "Unauthorized - Token required" });
+      return;
     }
 
     const token = authHeader.split(" ")[1];
@@ -30,7 +32,8 @@ export const authMiddleware = async (
     });
 
     if (!user) {
-      return res.status(401).json({ error: "Unauthorized - User not found" });
+      res.status(401).json({ error: "Unauthorized - User not found" });
+      return;
     }
 
     // Attach user to request object
@@ -40,6 +43,7 @@ export const authMiddleware = async (
     next();
   } catch (error) {
     console.error("Auth error:", error);
-    return res.status(401).json({ error: "Unauthorized - Invalid token" });
+    res.status(401).json({ error: "Unauthorized - Invalid token" });
+    return;
   }
 };
