@@ -98,10 +98,11 @@ model Transaction {
   invoiceNumber    String?
   status           TransactionStatus @default(PENDING)
   type             PaymentType
+  paymanPaymentId  String?
+  aiRecommendation String?
   exchangeRate     Float?
   fee              Float?
   settlementTime   DateTime?
-  aiRecommendation String? // Store AI recommendation
   createdAt        DateTime          @default(now())
   completedAt      DateTime?
 
